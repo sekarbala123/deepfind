@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepFind - High Performance File Searcher</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Control Panel -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <polyline points="8 11 11 11 11 14"></polyline>
+                </svg>
+                <div class="logo-text">
+                    <h1>DeepFind</h1>
+                    <span>File Search Engine</span>
+                </div>
+            </div>
+
+            <form id="search-form" class="search-form">
+                <div class="form-group">
+                    <label for="startPath">
+                        Search Directory
+                        <span class="tooltip" data-tooltip="Absolute or relative path to start searching from">?</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="text" id="startPath" name="startPath" placeholder="e.g. . or /Users/name/projects" required>
+                        <button type="button" id="btn-browse-folder" title="Browse directories" style="right: 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        </button>
+                        <button type="button" id="btn-browse-current" title="Use current directory" style="right: 36px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="namePattern">
+                        Filename Pattern
+                        <span class="tooltip" data-tooltip="Filter by filename. Supports wildcards (*, ?) or Regex if enabled.">?</span>
+                    </label>
+                    <input type="text" id="namePattern" name="namePattern" placeholder="e.g. *.json or ^index\..+$">
+                </div>
+
+                <div class="form-group">
+                    <label for="contentPattern">
+                        Text Content
+                        <span class="tooltip" data-tooltip="Search for text lines inside files. Leave empty to just match filenames.">?</span>
+                    </label>
+                    <input type="text" id="contentPattern" name="contentPattern" placeholder="e.g. TODO or secret-key">
+                </div>
+
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="searchArchives" name="searchArchives">
+                        <span class="checkbox-custom"></span>
+                        Search inside archives
+                    </label>
+
+                    <div id="archive-formats-container" class="archive-formats-container" style="display: none;">
+                        <div class="formats-header">
+                            <span>Archive Formats</span>
+                            <span class="tooltip" data-tooltip="Configure which archive extensions to search and how they should be decompressed.">?</span>
+                        </div>
+                        <div class="formats-list" id="formats-list">
+                            <!-- Dynamic format items -->
+                        </div>
+                        <div class="add-format-row">
+                            <input type="text" id="new-ext" placeholder=".apk" class="input-mini">
+                            <select id="new-type" class="select-mini">
+                                <option value="zip">Zip</option>
+                                <option value="tar">Tar</option>
+                            </select>
+                            <button type="button" id="btn-add-format" class="btn-mini" title="Add Format">+</button>
+                        </div>
+                    </div>
+                    
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="ignoreCase" name="ignoreCase" checked>
+                        <span class="checkbox-custom"></span>
+                        Case insensitive matching
+                    </label>
+
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="useRegex" name="useRegex">
+                        <span class="checkbox-custom"></span>
+                        Use regular expressions
+                    </label>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" id="btn-search" class="btn btn-primary">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Start Search
+                    </button>
+                    <button type="button" id="btn-cancel" class="btn btn-secondary" disabled>
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                        </svg>
+                        Cancel
+                    </button>
+                </div>
+            </form>
+            
+            <div class="sidebar-footer">
+                <p>Running on localhost</p>
+                <div class="platform-indicator" id="platform-badge">Detected OS: Loading...</div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header Dashboard / Summary Metrics -->
+            <section class="dashboard-header">
+                <div class="metric-card glass">
+                    <div class="metric-title">Search Status</div>
+                    <div class="metric-value" id="stat-status">Idle</div>
+                    <div class="metric-subtitle" id="stat-status-sub">Ready to search</div>
+                </div>
+                <div class="metric-card glass">
+                    <div class="metric-title">Matches Found</div>
+                    <div class="metric-value" id="stat-matches">0</div>
+                    <div class="metric-subtitle" id="stat-matches-sub">0 files matched</div>
+                </div>
+                <div class="metric-card glass">
+                    <div class="metric-title">Time Elapsed</div>
+                    <div class="metric-value" id="stat-time">0.00s</div>
+                    <div class="metric-subtitle" id="stat-time-sub">Real-time update</div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-container glass">
+                <div class="results-header">
+                    <h2>Search Results</h2>
+                    <div class="results-controls">
+                        <input type="text" id="results-filter" placeholder="Filter results live..." disabled>
+                        <button id="btn-clear" class="btn-icon" title="Clear results">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="search-progress"></div>
+                </div>
+
+                <!-- Results List -->
+                <div class="results-list-wrapper">
+                    <div id="no-results" class="no-results-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <p>No results to display. Configure search parameters and click Start.</p>
+                    </div>
+
+                    <table class="results-table" id="results-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Match Location</th>
+                                <th>Type</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-tbody">
+                            <!-- Dynamic Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">Path copied to clipboard!</div>
+
+    <script src="/assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Run Tests
+        run: go test -v ./...
+
+      - name: Build Standalone Binaries
+        run: |
+          mkdir -p dist
+          # macOS Darwin (Apple Silicon)
+          GOOS=darwin GOARCH=arm64 go build -o dist/deepfind_darwin_arm64 main.go
+          # macOS Darwin (Intel)
+          GOOS=darwin GOARCH=amd64 go build -o dist/deepfind_darwin_amd64 main.go
+          # Windows (64-bit)
+          GOOS=windows GOARCH=amd64 go build -o dist/deepfind_windows_amd64.exe main.go
+          # Linux (64-bit)
+          GOOS=linux GOARCH=amd64 go build -o dist/deepfind_linux_amd64 main.go
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/deepfind_darwin_arm64
+            dist/deepfind_darwin_amd64
+            dist/deepfind_windows_amd64.exe
+            dist/deepfind_linux_amd64
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

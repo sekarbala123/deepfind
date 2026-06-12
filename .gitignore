@@ -1,0 +1,12 @@
+# Binaries
+/deepfind
+/deepfind.exe
+/dist/
+
+# Temporary test directories
+deepfind-test-*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+/.vscode
