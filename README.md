@@ -1,5 +1,7 @@
 # DeepFind
 
+[![Release](https://github.com/sekarbala123/deepfind/actions/workflows/release.yml/badge.svg)](https://github.com/sekarbala123/deepfind/actions/workflows/release.yml)
+
 **DeepFind** is a high-performance, cross-platform file and archive search engine written in Go. It provides both a blazing-fast Command-Line Interface (CLI) and a modern, interactive web-based dashboard UI.
 
 ## Features
@@ -20,7 +22,7 @@
 
 ### Installation
 
-Download pre-built binaries for your platform from the [Releases](https://github.com/your-username/deepfind/releases) tab, or build from source (see below).
+Download pre-built binaries for your platform from the [Releases](https://github.com/sekarbala123/deepfind/releases) tab, or build from source (see below).
 
 ### Interactive Web UI Mode
 
