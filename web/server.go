@@ -261,7 +261,7 @@ $f = New-Object System.Windows.Forms.FolderBrowserDialog
 $f.ShowNewFolderButton = $true
 $f.Description = "Select search directory"
 $res = $f.ShowDialog()
-if ($res -eq "OK") {
+if ($res -eq 1) {
     Write-Output $f.SelectedPath
 }
 `
