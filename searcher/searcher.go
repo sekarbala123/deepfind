@@ -21,13 +21,14 @@ type ArchiveFormat struct {
 
 // Options defines the parameters for a file search.
 type Options struct {
-	StartPath      string          `json:"startPath"`
-	NamePattern    string          `json:"namePattern"`
-	ContentPattern string          `json:"contentPattern"`
-	SearchArchives bool            `json:"searchArchives"`
-	ArchiveFormats []ArchiveFormat `json:"archiveFormats"`
-	UseRegex       bool            `json:"useRegex"`
-	IgnoreCase     bool            `json:"ignoreCase"`
+	StartPath             string          `json:"startPath"`
+	NamePattern           string          `json:"namePattern"`
+	ContentPattern        string          `json:"contentPattern"`
+	SearchArchives        bool            `json:"searchArchives"`
+	ArchiveFormats        []ArchiveFormat `json:"archiveFormats"`
+	UseRegex              bool            `json:"useRegex"`
+	IgnoreCase            bool            `json:"ignoreCase"`
+	SkipCorruptedArchives bool            `json:"skipCorruptedArchives"`
 }
 
 var DefaultArchiveFormats = []ArchiveFormat{

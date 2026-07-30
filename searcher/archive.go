@@ -118,9 +118,12 @@ func (m *Matcher) searchTar(archivePath string, results chan<- Result) {
 			break
 		}
 		if err != nil {
-			// Error reading TAR: report and stop
-			// This conservative approach ensures data integrity by not returning partial/incomplete result sets.
-			// Future enhancement: add optional --skip-corrupted flag to continue on read errors.
+			// Error reading TAR: handle based on SkipCorruptedArchives setting
+			if m.opts.SkipCorruptedArchives {
+				// Skip corrupted archives silently (default behavior)
+				return
+			}
+			// Report error and stop (verbose/debug mode)
 			results <- Result{Path: archivePath, Error: "Tar read error: " + err.Error()}
 			break
 		}
