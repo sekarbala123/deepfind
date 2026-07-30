@@ -56,6 +56,7 @@ func main() {
 	useRegex := flag.Bool("regex", false, "Interpret filename and content patterns as regular expressions")
 	ignoreCase := flag.Bool("ignore-case", true, "Perform case-insensitive matching")
 	runUI := flag.Bool("ui", false, "Launch the local Web UI dashboard")
+	exportCSV := flag.String("export-csv", "", "Export search results to CSV file")
 	port := flag.Int("port", 8080, "Web UI port")
 
 	// Set custom usage message
@@ -126,7 +127,9 @@ func main() {
 	go searcher.Search(ctx, opts, resultsChan)
 
 	matchCount := 0
+	var allResults []searcher.Result
 	for res := range resultsChan {
+		allResults = append(allResults, res)
 		if res.Error != "" {
 			fmt.Fprintf(os.Stderr, "%s[ERROR] %s: %s%s\n", colorRed, res.Path, res.Error, colorReset)
 			continue
@@ -155,6 +158,15 @@ func main() {
 
 	elapsed := time.Since(startTime)
 	fmt.Printf("\n%sSearch completed in %s. Found %d matches.%s\n", colorGreen, elapsed.Round(time.Millisecond), matchCount, colorReset)
+
+	// Export to CSV if requested
+	if *exportCSV != "" {
+		if err := searcher.ExportResultsToCSV(allResults, *exportCSV); err != nil {
+			fmt.Fprintf(os.Stderr, "%sError exporting CSV: %v%s\n", colorRed, err, colorReset)
+			os.Exit(1)
+		}
+		fmt.Printf("%sResults exported to: %s%s\n", colorGreen, *exportCSV, colorReset)
+	}
 }
 
 func highlightTerminal(line string, pattern string) string {
