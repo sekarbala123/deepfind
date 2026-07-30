@@ -56,6 +56,9 @@ func StartServer(port int, autoOpen bool) error {
 	// Directory browser endpoint
 	http.HandleFunc("/api/browse", handleBrowse)
 
+	// CSV export endpoint
+	http.HandleFunc("/api/export-csv", handleExportCSV)
+
 	// Bind to port (find first available if 0 or default is taken)
 	listener, actualPort, err := listenOnPort(port)
 	if err != nil {
@@ -289,4 +292,47 @@ func chooseFolderLinux() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("no supported dialog tool found (zenity or kdialog)")
+}
+
+
+// handleExportCSV exports search results as CSV file
+func handleExportCSV(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var results []searcher.Result
+	if err := json.NewDecoder(r.Body).Decode(&results); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Create temp file for CSV
+	tmpFile, err := os.CreateTemp("", "deepfind-*.csv")
+	if err != nil {
+		http.Error(w, "Failed to create temp file", http.StatusInternalServerError)
+		return
+	}
+	tmpPath := tmpFile.Name()
+	tmpFile.Close()
+	defer os.Remove(tmpPath)
+
+	// Export results to CSV
+	if err := searcher.ExportResultsToCSV(results, tmpPath); err != nil {
+		http.Error(w, fmt.Sprintf("CSV export failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Read CSV file and serve as download
+	data, err := os.ReadFile(tmpPath)
+	if err != nil {
+		http.Error(w, "Failed to read CSV file", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", "attachment; filename=deepfind-results.csv")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(data)))
+	w.Write(data)
 }
