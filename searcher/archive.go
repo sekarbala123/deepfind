@@ -7,7 +7,27 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+// isValidArchivePath validates that an archive entry path is safe and doesn't contain traversal attempts.
+// Returns true if the path is valid, false if it contains dangerous patterns.
+func isValidArchivePath(entryPath string) bool {
+	// Reject paths with explicit parent directory references
+	if strings.Contains(entryPath, "..") {
+		return false
+	}
+	// Ensure the path is not absolute
+	if filepath.IsAbs(entryPath) {
+		return false
+	}
+	// Clean the path and verify it doesn't escape
+	cleanPath := filepath.Clean(entryPath)
+	if strings.HasPrefix(cleanPath, "..") {
+		return false
+	}
+	return true
+}
 
 // SearchArchiveFile opens the archive and searches its contents.
 func (m *Matcher) SearchArchiveFile(archivePath string, archiveType string, results chan<- Result) {
@@ -39,6 +59,11 @@ func (m *Matcher) searchZip(archivePath string, results chan<- Result) {
 	for _, f := range r.File {
 		// Skip directories
 		if f.FileInfo().IsDir() {
+			continue
+		}
+
+		// Validate path to prevent traversal attacks
+		if !isValidArchivePath(f.Name) {
 			continue
 		}
 
@@ -93,12 +118,25 @@ func (m *Matcher) searchTar(archivePath string, results chan<- Result) {
 			break
 		}
 		if err != nil {
+			// Error reading TAR: report and stop
+			// This conservative approach ensures data integrity by not returning partial/incomplete result sets.
+			// Future enhancement: add optional --skip-corrupted flag to continue on read errors.
 			results <- Result{Path: archivePath, Error: "Tar read error: " + err.Error()}
 			break
 		}
 
-		// Skip directories
-		if hdr.Typeflag == tar.TypeDir {
+		// Skip directories and special file types (symlinks, hard links, sparse files, etc.)
+		if hdr.Typeflag == tar.TypeDir ||
+			hdr.Typeflag == tar.TypeSymlink ||
+			hdr.Typeflag == tar.TypeLink ||
+			hdr.Typeflag == tar.TypeGNUSparse ||
+			hdr.Typeflag == tar.TypeGNULongName ||
+			hdr.Typeflag == tar.TypeGNULongLink {
+			continue
+		}
+
+		// Validate path to prevent traversal attacks
+		if !isValidArchivePath(hdr.Name) {
 			continue
 		}
 
