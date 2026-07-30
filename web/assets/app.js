@@ -12,6 +12,7 @@ const btnCancel = document.getElementById('btn-cancel');
 const btnClear = document.getElementById('btn-clear');
 const btnBrowseCurrent = document.getElementById('btn-browse-current');
 const btnBrowseFolder = document.getElementById('btn-browse-folder');
+const btnExportCSV = document.getElementById('btn-export-csv');
 
 const statStatus = document.getElementById('stat-status');
 const statStatusSub = document.getElementById('stat-status-sub');
@@ -197,6 +198,45 @@ async function fetchPlatform() {
 btnBrowseCurrent.addEventListener('click', () => {
     startPathInput.value = '.';
 });
+
+// Export CSV button
+btnExportCSV.addEventListener('click', async () => {
+    if (!resultsList || resultsList.length === 0) {
+        showToast('No results to export', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/export-csv', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(resultsList)
+        });
+        
+        if (!response.ok) {
+            const errText = await response.text();
+            showToast(`Export failed: ${response.statusText} - ${errText}`, 'error');
+            return;
+        }
+        
+        // Trigger download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'deepfind-results.csv';
+        link.click();
+        window.URL.revokeObjectURL(url);
+        
+        showToast(`Exported ${resultsList.length} results to CSV`, 'success');
+    } catch (err) {
+        console.error('CSV export error:', err);
+        showToast(`Export error: ${err.message}`, 'error');
+    }
+});
+
 
 // Search execution
 searchForm.addEventListener('submit', (e) => {
