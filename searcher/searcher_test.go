@@ -313,3 +313,50 @@ func TestGetMatchingArchiveFormat(t *testing.T) {
 	}
 }
 
+
+
+// TestExportResultsToCSV tests CSV export functionality
+func TestExportResultsToCSV(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "test-*.csv")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	tmpPath := tmpFile.Name()
+	tmpFile.Close()
+	defer os.Remove(tmpPath)
+
+	results := []Result{
+		{Path: "/home/user/file.txt", IsArchive: false, IsContentMatch: true, LineNumber: 5, LineContent: "test content"},
+		{Path: "/home/user/archive.zip", IsArchive: true, ArchivePath: "/home/user/archive.zip", InnerPath: "inner.txt", IsContentMatch: true, LineNumber: 10, LineContent: "archive content"},
+		{Path: "/home/user/bad.gz", IsArchive: true, ArchivePath: "/home/user/bad.gz", Error: "(skipped)"},
+	}
+
+	if err := ExportResultsToCSV(results, tmpPath); err != nil {
+		t.Fatalf("ExportResultsToCSV failed: %v", err)
+	}
+
+	// Verify file was created and contains data
+	data, err := os.ReadFile(tmpPath)
+	if err != nil {
+		t.Fatalf("Failed to read CSV file: %v", err)
+	}
+
+	if len(data) == 0 {
+		t.Fatal("CSV file is empty")
+	}
+
+	// Verify CSV contains header
+	csv := string(data)
+	if !strings.Contains(csv, "path,is_archive,archive_path,inner_path,is_content_match,line_number,line_content,error") {
+		t.Errorf("CSV header not found. Got: %s", csv)
+	}
+
+	// Verify CSV contains data rows
+	if !strings.Contains(csv, "/home/user/file.txt") {
+		t.Errorf("First result not found in CSV")
+	}
+
+	if !strings.Contains(csv, "/home/user/archive.zip") {
+		t.Errorf("Archive result not found in CSV")
+	}
+}
