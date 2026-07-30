@@ -4,10 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/csv"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -21,13 +24,14 @@ type ArchiveFormat struct {
 
 // Options defines the parameters for a file search.
 type Options struct {
-	StartPath      string          `json:"startPath"`
-	NamePattern    string          `json:"namePattern"`
-	ContentPattern string          `json:"contentPattern"`
-	SearchArchives bool            `json:"searchArchives"`
-	ArchiveFormats []ArchiveFormat `json:"archiveFormats"`
-	UseRegex       bool            `json:"useRegex"`
-	IgnoreCase     bool            `json:"ignoreCase"`
+	StartPath             string          `json:"startPath"`
+	NamePattern           string          `json:"namePattern"`
+	ContentPattern        string          `json:"contentPattern"`
+	SearchArchives        bool            `json:"searchArchives"`
+	ArchiveFormats        []ArchiveFormat `json:"archiveFormats"`
+	UseRegex              bool            `json:"useRegex"`
+	IgnoreCase            bool            `json:"ignoreCase"`
+	SkipCorruptedArchives bool            `json:"skipCorruptedArchives"`
 }
 
 var DefaultArchiveFormats = []ArchiveFormat{
@@ -340,3 +344,50 @@ func Search(ctx context.Context, opts Options, results chan<- Result) {
 }
 
 
+
+
+// ExportResultsToCSV writes search results to a CSV file with proper RFC 4180 formatting
+func ExportResultsToCSV(results []Result, filepath string) error {
+	file, err := os.Create(filepath)
+	if err != nil {
+		return fmt.Errorf("failed to create CSV file: %w", err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write header row
+	header := []string{
+		"path",
+		"is_archive",
+		"archive_path",
+		"inner_path",
+		"is_content_match",
+		"line_number",
+		"line_content",
+		"error",
+	}
+	if err := writer.Write(header); err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	// Write data rows
+	for _, result := range results {
+		row := []string{
+			result.Path,
+			strconv.FormatBool(result.IsArchive),
+			result.ArchivePath,
+			result.InnerPath,
+			strconv.FormatBool(result.IsContentMatch),
+			strconv.Itoa(result.LineNumber),
+			result.LineContent,
+			result.Error,
+		}
+		if err := writer.Write(row); err != nil {
+			return fmt.Errorf("failed to write CSV row: %w", err)
+		}
+	}
+
+	return nil
+}

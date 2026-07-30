@@ -59,7 +59,32 @@ Options:
         Interpret filename and content patterns as regular expressions (default false)
   -ignore-case
         Perform case-insensitive matching (default true)
+  -export-csv string
+        Export search results to CSV file (filename or path)
+  -ui
+        Launch interactive Web UI dashboard (default false)
 ```
+|
+### Export Results as CSV
+|
+Export search results to a CSV file for analysis in spreadsheets or external tools:
+```bash
+# Export results to CSV file
+deepfind -name "*.log" -path "/var/log" -export-csv results.csv
+|
+# Export archive search results
+deepfind -name "*.json" -archive -export-csv data.csv -path "/home/user"
+```
+|
+**CSV Format:** Standard RFC 4180 with 8 columns:
+- path: File system path or archive path
+- is_archive: Whether result is from archive (true/false)
+- archive_path: Parent archive path if nested
+- inner_path: Path within archive if applicable
+- is_content_match: Whether match is content or filename only (true/false)
+- line_number: Line number for content matches
+- line_content: The matching line text
+- error: Error message if result is an error entry
 
 ---
 
